@@ -12,7 +12,8 @@
     "@coinbase/onchainkit": "^0.35.5",
     "next": "15.0.3",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "shadcn-ui": "^0.9.3"
   },
   "devDependencies": {
     "@types/node": "^20",
