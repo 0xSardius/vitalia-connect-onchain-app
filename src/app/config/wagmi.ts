@@ -4,8 +4,8 @@ import { base, baseSepolia } from "wagmi/chains";
 import { coinbaseWallet } from "wagmi/connectors";
 
 // Contract ABIs
-import { VITALIA_PROFILES_ABI } from "@/config/abis/VitaliaProfiles";
-import { VITALIA_CONNECT_ABI } from "@/config/abis/VitaliaConnect";
+import { VITALIA_PROFILES_ABI } from "./abis/VitaliaProfiles";
+import { VITALIA_CONNECT_ABI } from "./abis/VitaliaConnect";
 
 // Environment variables setup
 const NETWORK =
@@ -28,12 +28,11 @@ export function getConfig(): Config {
     connectors: [
       coinbaseWallet({
         appName: "Vitalia Connect",
-        // Optional chain configuration
-        chains: [NETWORK],
       }),
     ],
     transports: {
-      [NETWORK.id]: http(),
+      [base.id]: http(),
+      [baseSepolia.id]: http(),
     },
   });
 }

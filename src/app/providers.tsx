@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { base, baseSepolia } from "wagmi/chains";
 import { type ReactNode, useState } from "react";
 import { type State, WagmiProvider } from "wagmi";
-import { getConfig } from "./wagmi";
+import { getConfig } from "./config/wagmi";
 
 // Choose network - use baseSepolia for testing, base for mainnet
 const NETWORK =
