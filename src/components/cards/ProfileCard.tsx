@@ -1,4 +1,4 @@
-import { Avatar, Name } from "@coinbase/onchainkit/identity";
+import { Avatar, Name, Identity } from "@coinbase/onchainkit/identity";
 import { useProfile } from "@/hooks/useProfile";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,28 +7,43 @@ import {
   CalendarIcon,
   EnvelopeClosedIcon,
   MobileIcon,
+  Pencil1Icon,
 } from "@radix-ui/react-icons";
 
 interface ProfileCardProps {
   address?: `0x${string}`;
   onEdit?: () => void;
+  className?: string;
 }
 
-export default function ProfileCard({ address, onEdit }: ProfileCardProps) {
+export default function ProfileCard({
+  address,
+  onEdit,
+  className,
+}: ProfileCardProps) {
   const { profile, stats, isLoading } = useProfile(address);
 
   if (isLoading) {
     return (
-      <Card>
+      <Card className={className}>
         <CardContent className="p-6">
-          <div className="animate-pulse flex space-x-4">
-            <div className="rounded-full bg-slate-200 h-12 w-12"></div>
-            <div className="flex-1 space-y-4 py-1">
-              <div className="h-4 bg-slate-200 rounded w-3/4"></div>
-              <div className="space-y-3">
-                <div className="h-4 bg-slate-200 rounded"></div>
-                <div className="h-4 bg-slate-200 rounded w-5/6"></div>
+          <div className="animate-pulse space-y-6">
+            <div className="flex space-x-4">
+              <div className="rounded-full bg-muted h-12 w-12"></div>
+              <div className="flex-1 space-y-4 py-1">
+                <div className="h-4 bg-muted rounded w-3/4"></div>
+                <div className="h-4 bg-muted rounded w-1/2"></div>
               </div>
+            </div>
+            <div className="space-y-3">
+              <div className="h-4 bg-muted rounded"></div>
+              <div className="h-4 bg-muted rounded"></div>
+              <div className="h-4 bg-muted rounded w-5/6"></div>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-16 bg-muted rounded"></div>
+              ))}
             </div>
           </div>
         </CardContent>
@@ -38,7 +53,7 @@ export default function ProfileCard({ address, onEdit }: ProfileCardProps) {
 
   if (!profile) {
     return (
-      <Card>
+      <Card className={className}>
         <CardContent className="p-6">
           <p className="text-muted-foreground">No profile found</p>
           {onEdit && (
@@ -52,21 +67,24 @@ export default function ProfileCard({ address, onEdit }: ProfileCardProps) {
   }
 
   return (
-    <Card>
+    <Card className={className}>
       <CardHeader className="flex flex-row items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Avatar address={address} className="h-12 w-12" />
-          <div>
-            <Name address={address} className="text-xl font-bold" />
-            {profile.credentials && (
-              <p className="text-sm text-muted-foreground">
-                {profile.credentials}
-              </p>
-            )}
+        <Identity address={address}>
+          <div className="flex items-center gap-4">
+            <Avatar className="h-12 w-12" />
+            <div>
+              <Name className="text-xl font-bold" />
+              {profile.credentials && (
+                <p className="text-sm text-muted-foreground">
+                  {profile.credentials}
+                </p>
+              )}
+            </div>
           </div>
-        </div>
+        </Identity>
         {onEdit && (
           <Button variant="outline" size="sm" onClick={onEdit}>
+            <Pencil1Icon className="h-4 w-4 mr-2" />
             Edit Profile
           </Button>
         )}

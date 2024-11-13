@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useAccount } from "wagmi";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import WalletConnect from "@/components/WalletConnect";
@@ -10,6 +11,15 @@ import { useRouter } from "next/navigation";
 export default function HomePage() {
   const { address } = useAccount();
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null; // or a loading state
+  }
 
   return (
     <div className="min-h-screen bg-background">
