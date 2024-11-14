@@ -7,8 +7,17 @@ import {
   WalletDropdownDisconnect,
 } from "@coinbase/onchainkit/wallet";
 import { Avatar, Name, Identity } from "@coinbase/onchainkit/identity";
+import { useEffect, useState } from "react";
 
 export default function WalletConnect() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
+
   return (
     <Wallet>
       <ConnectWallet>
@@ -20,7 +29,7 @@ export default function WalletConnect() {
           <Avatar />
           <Name />
         </Identity>
-        <WalletDropdownDisconnect />
+        <WalletDropdownDisconnect className="w-full" />
       </WalletDropdown>
     </Wallet>
   );

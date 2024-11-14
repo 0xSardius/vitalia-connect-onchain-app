@@ -6,7 +6,8 @@ export interface ListingFilters {
   status?: ListingStatus;
   category?: string;
   expertise?: string;
-  creatorAddress?: `0x${string}`;
+  creatorAddress?: string;
+  responderAddress?: string;
 }
 
 export function useListings(filters?: ListingFilters) {
