@@ -1,4 +1,3 @@
-// config/abis/VitaliaProfiles.ts
 export const VITALIA_PROFILES_ABI = [
   {
     inputs: [],
@@ -68,6 +67,56 @@ export const VITALIA_PROFILES_ABI = [
     type: "event",
   },
   {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "address",
+        name: "user",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "timestamp",
+        type: "uint256",
+      },
+    ],
+    name: "ProfileDeactivated",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "address",
+        name: "user",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "bool",
+        name: "onSiteStatus",
+        type: "bool",
+      },
+      {
+        indexed: false,
+        internalType: "string[]",
+        name: "expertiseAreas",
+        type: "string[]",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "timestamp",
+        type: "uint256",
+      },
+    ],
+    name: "ProfileUpdated",
+    type: "event",
+  },
+  {
     inputs: [
       {
         internalType: "string",
@@ -103,6 +152,26 @@ export const VITALIA_PROFILES_ABI = [
     name: "createProfile",
     outputs: [],
     stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "deactivateProfile",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "owner",
+    outputs: [
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+    ],
+    stateMutability: "view",
     type: "function",
   },
   {
@@ -231,23 +300,109 @@ export const VITALIA_PROFILES_ABI = [
     stateMutability: "nonpayable",
     type: "function",
   },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "_user",
+        type: "address",
+      },
+      {
+        internalType: "uint40",
+        name: "_listingsCompleted",
+        type: "uint40",
+      },
+      {
+        internalType: "uint40",
+        name: "_totalListingsCreated",
+        type: "uint40",
+      },
+      {
+        internalType: "uint40",
+        name: "_totalResponses",
+        type: "uint40",
+      },
+    ],
+    name: "updateProfileStats",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "_connectContract",
+        type: "address",
+      },
+    ],
+    name: "setConnectContract",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "connectContract",
+    outputs: [
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "string",
+        name: "_expertise",
+        type: "string",
+      },
+    ],
+    name: "getProfilesByExpertise",
+    outputs: [
+      {
+        internalType: "address[]",
+        name: "matchingProfiles",
+        type: "address[]",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "getAllActiveProfiles",
+    outputs: [
+      {
+        internalType: "address[]",
+        name: "activeAddresses",
+        type: "address[]",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bool",
+        name: "_onSite",
+        type: "bool",
+      },
+    ],
+    name: "getProfilesByOnSiteStatus",
+    outputs: [
+      {
+        internalType: "address[]",
+        name: "filteredAddresses",
+        type: "address[]",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
 ] as const;
-
-// Typescript types for the profile
-export interface VitaliaProfile {
-  isActive: boolean;
-  contactInfo: string;
-  onSiteStatus: boolean;
-  travelDetails: string;
-  lastStatusUpdate: bigint;
-  expertiseAreas: string[];
-  credentials: string;
-  bio: string;
-}
-
-export interface UserStats {
-  completed: number;
-  created: number;
-  responses: number;
-  lastActive: bigint;
-}

@@ -5,7 +5,7 @@ import { coinbaseWallet } from "wagmi/connectors";
 
 // Contract ABIs
 import { VITALIA_PROFILES_ABI } from "./abis/VitaliaProfiles";
-import { VITALIA_CONNECT_ABI } from "./abis/VitaliaConnect";
+import { VitaliaConnectABI as VITALIA_CONNECT_ABI } from "./abis/VitaliaConnect";
 
 // Environment variables setup
 const NETWORK =
@@ -46,5 +46,12 @@ export const contractConfig = {
   connect: {
     address: VITALIA_CONNECT_ADDRESS as `0x${string}`,
     abi: VITALIA_CONNECT_ABI,
+    functionNames: [
+      "getActiveListings",
+      "getListingsByStatus",
+      "getCategories",
+      "getListingsByExpertise",
+      "getListing",
+    ] as const,
   },
 } as const;

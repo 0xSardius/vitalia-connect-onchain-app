@@ -1,63 +1,171 @@
-// hooks/useProfile.ts
 import { useAccount, useReadContract } from "wagmi";
-import { contractConfig } from "../app/config/wagmi";
-import { UserProfile } from "../app/config/contracts";
+import { VitaliaProfile, VitaliaStats, UseProfileReturn } from "@/app/config";
+import { contractConfig } from "@/app/config/wagmi";
+import { useCallback } from "react";
 
-export function useProfile(address?: `0x${string}`) {
+export function useProfile(address?: `0x${string}`): UseProfileReturn {
   const { address: connectedAddress } = useAccount();
   const targetAddress = address || connectedAddress;
 
   const {
-    data: profile,
-    isError,
-    isLoading,
-    refetch,
+    data: rawProfile,
+    isError: isProfileError,
+    isLoading: isProfileLoading,
+    refetch: refetchProfile,
   } = useReadContract({
     ...contractConfig.profiles,
     functionName: "getProfile",
     args: targetAddress ? [targetAddress] : undefined,
     query: {
       enabled: !!targetAddress,
+      staleTime: 30_000, // Data considered fresh for 30 seconds
+      gcTime: 5 * 60 * 1000, // Cache for 5 minutes (formerly cacheTime)
+      refetchOnMount: false,
+      refetchOnWindowFocus: false,
     },
   });
 
-  const { data: stats, isLoading: isLoadingStats } = useReadContract({
+  const {
+    data: rawStats,
+    isError: isStatsError,
+    isLoading: isStatsLoading,
+    refetch: refetchStats,
+  } = useReadContract({
     ...contractConfig.profiles,
     functionName: "getUserStats",
     args: targetAddress ? [targetAddress] : undefined,
     query: {
       enabled: !!targetAddress,
+      staleTime: 30_000,
+      gcTime: 5 * 60 * 1000,
+      refetchOnMount: false,
+      refetchOnWindowFocus: false,
     },
   });
 
-  // Transform the raw contract data into a more usable format
-  const formattedProfile: UserProfile | undefined = profile
-    ? {
-        isActive: profile[0],
-        contactInfo: profile[1],
-        onSiteStatus: profile[2],
-        travelDetails: profile[3],
-        lastStatusUpdate: profile[4],
-        expertiseAreas: Array.from(profile[5]), // Create a new mutable array
-        credentials: profile[6],
-        bio: profile[7],
-      }
-    : undefined;
+  // Type guard for profile data
+  const isValidProfileData = (
+    data: unknown
+  ): data is [
+    boolean,
+    string,
+    boolean,
+    string,
+    bigint,
+    string[],
+    string,
+    string
+  ] => {
+    if (!Array.isArray(data)) return false;
+    if (data.length !== 8) return false;
 
-  const formattedStats = stats
-    ? {
-        completed: Number(stats[0]),
-        created: Number(stats[1]),
-        responses: Number(stats[2]),
-        lastActive: Number(stats[3]),
+    const [
+      isActive,
+      contactInfo,
+      onSiteStatus,
+      travelDetails,
+      lastStatusUpdate,
+      expertiseAreas,
+      credentials,
+      bio,
+    ] = data;
+
+    return (
+      typeof isActive === "boolean" &&
+      typeof contactInfo === "string" &&
+      typeof onSiteStatus === "boolean" &&
+      typeof travelDetails === "string" &&
+      typeof lastStatusUpdate === "bigint" &&
+      Array.isArray(expertiseAreas) &&
+      typeof credentials === "string" &&
+      typeof bio === "string"
+    );
+  };
+
+  // Type guard for stats data
+  const isValidStatsData = (
+    data: unknown
+  ): data is [bigint, bigint, bigint, bigint] => {
+    if (!Array.isArray(data)) return false;
+    if (data.length !== 4) return false;
+    return data.every(
+      (item) => typeof item === "bigint" || typeof item === "number"
+    );
+  };
+
+  const formatProfile = useCallback(
+    (data: unknown): VitaliaProfile | undefined => {
+      if (!isValidProfileData(data)) {
+        return undefined;
       }
-    : undefined;
+
+      try {
+        const [
+          isActive,
+          contactInfo,
+          onSiteStatus,
+          travelDetails,
+          lastStatusUpdate,
+          expertiseAreas,
+          credentials,
+          bio,
+        ] = data;
+
+        return {
+          isActive,
+          contactInfo,
+          onSiteStatus,
+          travelDetails,
+          lastStatusUpdate,
+          expertiseAreas: [...expertiseAreas],
+          credentials,
+          bio,
+        };
+      } catch {
+        return undefined;
+      }
+    },
+    []
+  );
+
+  const formatStats = useCallback((data: unknown): VitaliaStats | undefined => {
+    if (!isValidStatsData(data)) {
+      return undefined;
+    }
+
+    try {
+      const [completed, created, responses, lastActive] = data;
+      return {
+        completed:
+          typeof completed === "number" ? BigInt(completed) : completed,
+        created: typeof created === "number" ? BigInt(created) : created,
+        responses:
+          typeof responses === "number" ? BigInt(responses) : responses,
+        lastActive:
+          typeof lastActive === "number" ? BigInt(lastActive) : lastActive,
+      };
+    } catch {
+      return undefined;
+    }
+  }, []);
+
+  const formattedProfile = rawProfile ? formatProfile(rawProfile) : undefined;
+  const formattedStats = rawStats ? formatStats(rawStats) : undefined;
+
+  const refetch = useCallback(async () => {
+    try {
+      await Promise.all([refetchProfile(), refetchStats()]);
+    } catch (error) {
+      console.error("Error refetching profile data:", error);
+      throw error;
+    }
+  }, [refetchProfile, refetchStats]);
 
   return {
     profile: formattedProfile,
     stats: formattedStats,
-    isError,
-    isLoading: isLoading || isLoadingStats,
+    isError: isProfileError || isStatsError,
+    isLoading: isProfileLoading || isStatsLoading,
     refetch,
   };
 }
