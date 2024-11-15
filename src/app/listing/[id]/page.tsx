@@ -20,11 +20,14 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 
-export default function ListingDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+interface PageProps {
+  params: {
+    id: string;
+  };
+  searchParams: { [key: string]: string | string[] | undefined };
+}
+
+export default function ListingDetailPage({ params }: PageProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [listing, setListing] = useState<Listing>();
