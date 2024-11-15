@@ -11,26 +11,8 @@ export interface ListingFilters {
 }
 
 export function useListings(filters?: ListingFilters) {
-  let functionName:
-    | "getActiveListings"
-    | "getListingsByStatus"
-    | "getListingsByExpertise"
-    | "getCategories";
-  let args: (ListingStatus | string | `0x${string}`)[] = [];
-
-  // Determine which contract function to call based on filters
-  if (filters?.status) {
-    functionName = "getListingsByStatus";
-    args = [filters.status];
-  } else if (filters?.expertise) {
-    functionName = "getListingsByExpertise";
-    args = [filters.expertise];
-  } else if (filters?.creatorAddress) {
-    functionName = "getCategories";
-    args = [filters.creatorAddress];
-  } else {
-    functionName = "getActiveListings";
-  }
+  // Always get all listings by default
+  const functionName = "getActiveListings";
 
   const {
     data: listings,
@@ -40,7 +22,6 @@ export function useListings(filters?: ListingFilters) {
   } = useReadContract({
     ...contractConfig.connect,
     functionName,
-    args: args.length ? [args[0]] : undefined,
   }) as {
     data: RawListing[] | undefined;
     isError: boolean;
@@ -75,8 +56,31 @@ export function useListings(filters?: ListingFilters) {
       ] as ListingStatus,
     })) ?? [];
 
+  // Apply filters after formatting
+  let filteredListings = formattedListings;
+
+  if (filters) {
+    filteredListings = formattedListings.filter((listing) => {
+      if (filters.status && listing.status !== filters.status) return false;
+      if (filters.creatorAddress && listing.creator !== filters.creatorAddress)
+        return false;
+      if (filters.expertise && listing.expertise !== filters.expertise)
+        return false;
+      if (filters.category && listing.category !== filters.category)
+        return false;
+      return true;
+    });
+  }
+
+  // Only show active listings by default if no status filter is specified
+  if (!filters?.status) {
+    filteredListings = filteredListings.filter(
+      (listing) => listing.active && listing.status === "Open"
+    );
+  }
+
   return {
-    listings: formattedListings,
+    listings: filteredListings,
     isError,
     isLoading,
     refetch,

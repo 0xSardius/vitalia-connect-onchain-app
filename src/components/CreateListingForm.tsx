@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Card,
@@ -75,31 +75,29 @@ export default function CreateListingForm() {
     }
   };
 
-  const isFormValid = () => {
+  const { isValid, errorMessage } = useMemo(() => {
     if (!formData.title) {
-      setError("Title is required");
-      return false;
+      return { isValid: false, errorMessage: "Title is required" };
     }
     if (!formData.description) {
-      setError("Description is required");
-      return false;
+      return { isValid: false, errorMessage: "Description is required" };
     }
     if (!formData.category) {
-      setError("Category is required");
-      return false;
+      return { isValid: false, errorMessage: "Category is required" };
     }
     if (!formData.expertise) {
-      setError("Expertise is required");
-      return false;
+      return { isValid: false, errorMessage: "Expertise is required" };
     }
     if (!formData.contactMethod) {
-      setError("Contact method is required");
-      return false;
+      return { isValid: false, errorMessage: "Contact method is required" };
     }
 
-    setError(undefined);
-    return true;
-  };
+    return { isValid: true, errorMessage: undefined };
+  }, [formData]);
+
+  useEffect(() => {
+    setError(errorMessage);
+  }, [errorMessage]);
 
   return (
     <Card className="w-full max-w-2xl mx-auto">
@@ -263,7 +261,7 @@ export default function CreateListingForm() {
             ]}
             onStatus={handleTransactionStatus}
           >
-            <TransactionButton className="w-full" disabled={!isFormValid()} />
+            <TransactionButton className="w-full" disabled={!isValid} />
             <TransactionToast>
               <TransactionToastIcon />
               <TransactionToastLabel />

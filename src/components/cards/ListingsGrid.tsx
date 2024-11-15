@@ -1,6 +1,7 @@
 import { useListings } from "@/hooks/useListings";
 import ListingCard from "./ListingCard";
 import { Button } from "@/components/ui/button";
+import React from "react";
 
 interface ListingsGridProps {
   filters?: {
@@ -15,6 +16,16 @@ export default function ListingsGrid({
   className = "",
 }: ListingsGridProps) {
   const { listings, isLoading, isError, refetch } = useListings(filters);
+
+  React.useEffect(() => {
+    refetch();
+
+    const interval = setInterval(() => {
+      refetch();
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [refetch]);
 
   if (isLoading) {
     return (

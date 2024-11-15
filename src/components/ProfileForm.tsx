@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Card,
@@ -7,9 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import {
   Transaction,
   TransactionButton,
@@ -21,7 +18,7 @@ import {
 } from "@coinbase/onchainkit/transaction";
 import { contractConfig } from "@/app/config/wagmi";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Label } from "@/components/ui/label";
+
 import { useToast } from "@/hooks/use-toast";
 
 export default function ProfileForm() {
@@ -38,49 +35,87 @@ export default function ProfileForm() {
 
   const [error, setError] = useState<string>();
 
-  const handleTransactionStatus = (status: LifecycleStatus) => {
-    switch (status.statusName) {
-      case "success":
-        toast({
-          title: "Profile Created",
-          description: "Your profile has been created successfully.",
-        });
-        setTimeout(() => router.push("/profile"), 1500);
-        break;
-      case "error":
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: status.statusData.message || "Failed to create profile",
-        });
-        break;
-    }
-  };
-
-  // Validate form data before allowing transaction
-  const isFormValid = () => {
+  // Use useMemo for validation state instead of a callback
+  const { isValid, validationError } = useMemo(() => {
     const expertiseArray = formData.expertiseAreas
       .split(",")
       .map((item) => item.trim())
       .filter((item) => item.length > 0);
 
     if (!formData.contactInfo) {
-      setError("Contact info is required");
-      return false;
+      return { isValid: false, validationError: "Contact info is required" };
     }
 
     if (expertiseArray.length === 0) {
-      setError("At least one area of expertise is required");
-      return false;
+      return {
+        isValid: false,
+        validationError: "At least one area of expertise is required",
+      };
     }
 
     if (formData.bio.length > 1000) {
-      setError("Bio must be less than 1000 characters");
-      return false;
+      return {
+        isValid: false,
+        validationError: "Bio must be less than 1000 characters",
+      };
     }
 
-    setError(undefined);
-    return true;
+    return { isValid: true, validationError: undefined };
+  }, [formData.contactInfo, formData.expertiseAreas, formData.bio]);
+
+  // Update error state when validation changes
+  useEffect(() => {
+    setError(validationError);
+  }, [validationError]);
+
+  const handleTransactionStatus = useCallback(
+    (status: LifecycleStatus) => {
+      switch (status.statusName) {
+        case "success":
+          toast({
+            title: "Profile Created",
+            description: "Your profile has been created successfully.",
+          });
+          // Navigate without trying to catch errors since router.push() returns void
+          router.push("/profile");
+          break;
+        case "error":
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description:
+              status.statusData.message || "Failed to create profile",
+          });
+          break;
+      }
+    },
+    [router, toast]
+  );
+
+  // Memoize the contract arguments
+  const contractArgs = useMemo(() => {
+    return [
+      formData.contactInfo,
+      formData.onSiteStatus,
+      formData.travelDetails,
+      formData.expertiseAreas
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => s),
+      formData.credentials,
+      formData.bio,
+    ] as const;
+  }, [formData]);
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value, type } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]:
+        type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
+    }));
   };
 
   return (
@@ -95,109 +130,75 @@ export default function ProfileForm() {
 
       <CardContent>
         <div className="space-y-6">
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="contactInfo">Contact Info</Label>
-              <Input
-                id="contactInfo"
-                placeholder="telegram:@username or email"
-                value={formData.contactInfo}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    contactInfo: e.target.value,
-                  }))
-                }
-              />
-              <p className="text-sm text-muted-foreground mt-1">
-                How should others contact you? (e.g., Telegram username)
-              </p>
-            </div>
+          <div className="grid gap-2">
+            <label htmlFor="contactInfo">Contact Information</label>
+            <input
+              id="contactInfo"
+              name="contactInfo"
+              className="w-full p-2 border rounded"
+              placeholder="Enter your contact details"
+              value={formData.contactInfo}
+              onChange={handleInputChange}
+            />
+          </div>
 
-            <div className="flex items-center justify-between rounded-lg border p-4">
-              <div className="space-y-0.5">
-                <Label>On-site Status</Label>
-                <p className="text-sm text-muted-foreground">
-                  Are you currently in Vitalia?
-                </p>
-              </div>
-              <Switch
-                checked={formData.onSiteStatus}
-                onCheckedChange={(checked) =>
-                  setFormData((prev) => ({ ...prev, onSiteStatus: checked }))
-                }
-              />
-            </div>
+          <div className="flex items-center gap-2">
+            <input
+              id="onSiteStatus"
+              type="checkbox"
+              name="onSiteStatus"
+              checked={formData.onSiteStatus}
+              onChange={handleInputChange}
+            />
+            <label htmlFor="onSiteStatus">Available for on-site work</label>
+          </div>
 
-            <div>
-              <Label htmlFor="travelDetails">Travel Details</Label>
-              <Input
-                id="travelDetails"
-                placeholder="E.g., Arriving March 1st / Currently here"
-                value={formData.travelDetails}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    travelDetails: e.target.value,
-                  }))
-                }
-              />
-              <p className="text-sm text-muted-foreground mt-1">
-                Share your travel plans or current status
-              </p>
-            </div>
+          <div className="grid gap-2">
+            <label htmlFor="travelDetails">Travel Details</label>
+            <input
+              id="travelDetails"
+              name="travelDetails"
+              className="w-full p-2 border rounded"
+              placeholder="Enter your travel preferences"
+              value={formData.travelDetails}
+              onChange={handleInputChange}
+            />
+          </div>
 
-            <div>
-              <Label htmlFor="expertiseAreas">Areas of Expertise</Label>
-              <Input
-                id="expertiseAreas"
-                placeholder="Biohacking, Longevity Research, Community Building"
-                value={formData.expertiseAreas}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    expertiseAreas: e.target.value,
-                  }))
-                }
-              />
-              <p className="text-sm text-muted-foreground mt-1">
-                Enter your areas of expertise, separated by commas
-              </p>
-            </div>
+          <div className="grid gap-2">
+            <label htmlFor="expertiseAreas">Areas of Expertise</label>
+            <input
+              id="expertiseAreas"
+              name="expertiseAreas"
+              className="w-full p-2 border rounded"
+              placeholder="Enter expertise areas, separated by commas"
+              value={formData.expertiseAreas}
+              onChange={handleInputChange}
+            />
+          </div>
 
-            <div>
-              <Label htmlFor="credentials">Credentials</Label>
-              <Input
-                id="credentials"
-                placeholder="E.g., PhD in Biology, Certified Health Coach"
-                value={formData.credentials}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    credentials: e.target.value,
-                  }))
-                }
-              />
-              <p className="text-sm text-muted-foreground mt-1">
-                List relevant qualifications or certifications
-              </p>
-            </div>
+          <div className="grid gap-2">
+            <label htmlFor="credentials">Credentials</label>
+            <input
+              id="credentials"
+              name="credentials"
+              className="w-full p-2 border rounded"
+              placeholder="Enter your credentials"
+              value={formData.credentials}
+              onChange={handleInputChange}
+            />
+          </div>
 
-            <div>
-              <Label htmlFor="bio">Bio</Label>
-              <Textarea
-                id="bio"
-                placeholder="Tell us about yourself..."
-                className="h-32"
-                value={formData.bio}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, bio: e.target.value }))
-                }
-              />
-              <p className="text-sm text-muted-foreground mt-1">
-                Brief introduction and background ({formData.bio.length}/1000)
-              </p>
-            </div>
+          <div className="grid gap-2">
+            <label htmlFor="bio">Bio</label>
+            <textarea
+              id="bio"
+              name="bio"
+              className="w-full p-2 border rounded min-h-[100px]"
+              placeholder="Tell us about yourself"
+              value={formData.bio}
+              onChange={handleInputChange}
+            />
           </div>
 
           {error && (
@@ -211,22 +212,12 @@ export default function ProfileForm() {
               {
                 ...contractConfig.profiles,
                 functionName: "createProfile",
-                args: [
-                  formData.contactInfo,
-                  formData.onSiteStatus,
-                  formData.travelDetails,
-                  formData.expertiseAreas
-                    .split(",")
-                    .map((s) => s.trim())
-                    .filter((s) => s),
-                  formData.credentials,
-                  formData.bio,
-                ],
+                args: contractArgs,
               },
             ]}
             onStatus={handleTransactionStatus}
           >
-            <TransactionButton className="w-full" disabled={!isFormValid()} />
+            <TransactionButton className="w-full" disabled={!isValid} />
             <TransactionToast>
               <TransactionToastIcon />
               <TransactionToastLabel />

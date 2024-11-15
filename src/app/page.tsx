@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 // import { ListingStatus } from "@/app/config/contracts";
 
 export default function HomePage() {
@@ -27,6 +27,16 @@ export default function HomePage() {
   const [activeView, setActiveView] = useState<
     "Open" | "InProgress" | "Resolved"
   >("Open");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Don't render anything until client-side mounted
+  if (!mounted) {
+    return null;
+  }
 
   // Render loading state
   if (isLoading) {

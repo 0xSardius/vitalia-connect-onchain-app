@@ -7,27 +7,42 @@ import { useProfile } from "@/hooks/useProfile";
 import { Button } from "@/components/ui/button";
 import { Avatar, Name } from "@coinbase/onchainkit/identity";
 import { Wallet, ConnectWallet } from "@coinbase/onchainkit/wallet";
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 
 export default function CreateProfilePage() {
-  const { address } = useAccount();
   const router = useRouter();
-  const { profile, isLoading } = useProfile();
-  const hasRedirected = useRef(false);
+  const { address } = useAccount();
+  const { profile, isLoading } = useProfile(address);
+  const [hasMounted, setHasMounted] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
+  // Handle client-side mounting
   useEffect(() => {
-    if (!isLoading && profile?.isActive && !hasRedirected.current) {
-      hasRedirected.current = true;
+    setHasMounted(true);
+  }, []);
+
+  // Handle profile check and redirect
+  useEffect(() => {
+    if (hasMounted && !isLoading && profile?.isActive && !isRedirecting) {
+      setIsRedirecting(true);
       router.replace("/");
     }
-  }, [profile?.isActive, isLoading, router]);
+  }, [hasMounted, isLoading, profile?.isActive, router, isRedirecting]);
 
-  // Show loading state while checking profile
-  if (isLoading) {
+  // Don't render anything until mounted
+  if (!hasMounted) {
+    return null;
+  }
+
+  // Loading states
+  if (isLoading || isRedirecting) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col items-center justify-center min-h-[60vh]">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
+          <p className="mt-4 text-muted-foreground">
+            {isRedirecting ? "Redirecting..." : "Loading..."}
+          </p>
         </div>
       </div>
     );
@@ -48,18 +63,6 @@ export default function CreateProfilePage() {
               <Name />
             </ConnectWallet>
           </Wallet>
-        </div>
-      </div>
-    );
-  }
-
-  // Don't render the form if we have an active profile
-  if (profile?.isActive) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col items-center justify-center min-h-[60vh]">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
-          <p className="mt-4 text-muted-foreground">Redirecting...</p>
         </div>
       </div>
     );
